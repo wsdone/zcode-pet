@@ -1,4 +1,4 @@
 *.bak
-zcode-pet/zcode-pet-bin
+**/zcode-pet-bin
 .DS_Store
 node_modules/
