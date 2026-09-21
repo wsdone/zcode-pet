@@ -9,10 +9,11 @@ ZCode hooks（7 事件，旁观者模式）
 
 ## 安装
 
-**方式一（推荐）：从 marketplace 安装**
+**方式一（推荐）：从 marketplace 安装**（两条命令，已在 ZCode 3.14 实测）：
 
 ```bash
-zcode plugins install --marketplace https://github.com/wsdone/zcode-pet zcode-pet
+zcode plugins marketplace add https://github.com/wsdone/zcode-pet
+zcode plugins install zcode-pet
 ```
 
 **方式二：本地市场**

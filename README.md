@@ -11,10 +11,11 @@ ZCode hooks (7 events, bystander mode — zero interference)
 
 ## Install
 
-**Option 1: from marketplace**
+**Option 1: from marketplace** (two commands, tested against ZCode 3.14):
 
 ```bash
-zcode plugins install --marketplace https://github.com/wsdone/zcode-pet zcode-pet
+zcode plugins marketplace add https://github.com/wsdone/zcode-pet
+zcode plugins install zcode-pet
 ```
 
 **Option 2: local marketplace** — Plugin Market → Add marketplace → paste this repo (contains `marketplace.json`) → install zcode-pet.
