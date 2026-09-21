@@ -37,8 +37,31 @@ zcode plugins install --marketplace https://github.com/wsdone/zcode-pet zcode-pe
 | 🍚 养成 | 喂食/摸头/亲密度解锁配饰（蝴蝶结→铃铛→皇冠）/猫粮掉落 |
 | 🛒 宠物市场 | `/pet market`：搜索浏览 petdex.dev 全库、动画预览、一键领养换装 |
 | 🎨 精灵图引擎 | petdex 官方规范（8 列×192×208），逐行帧率播放，`/pet import` 手动导入 |
+| 🐈 TUI 侧边栏 | 可选补丁：ZCode 终端侧边栏里再养一只 ASCII 猫，与桌面猫同步（见下） |
 
 详细文档见 [`zcode-pet/README.md`](zcode-pet/README.md)。
+
+## TUI 侧边栏补丁（可选彩蛋）
+
+在 ZCode 终端侧边栏里也养一只 ASCII 猫，和桌面悬浮猫消费同一份 `state.json`，同呼吸共命运：
+
+```
+ ▼ pet 🐾
+    /\_/   ( o.o )
+   / ˙˙ \_
+    U   U
+  mood:     working:Bash
+  hunger:   62
+```
+
+ZCode 上游暂不开放 PR，补丁维护在 [wsdone/ZCode 的 `feat/pet-sidebar` 分支](https://github.com/wsdone/ZCode/tree/feat/pet-sidebar)（自包含组件 `app-sidebar-pet.tsx`，默认折叠零干扰）。想给自己的 ZCode 加上：
+
+```bash
+cd /path/to/zcode   # zai-org/ZCode 源码
+git remote add pet https://github.com/wsdone/ZCode.git
+git fetch pet feat/pet-sidebar
+git cherry-pick pet/feat/pet-sidebar   # 一个 commit，含组件+接线
+```
 
 ## License
 
