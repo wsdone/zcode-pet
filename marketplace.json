@@ -9,11 +9,19 @@
       "source": "./zcode-pet",
       "version": "0.3.0",
       "description": "Desktop pet that mirrors your ZCode agent state — thinking, working, waiting for confirmation, error, done. Feeding & affinity, plus a marketplace to adopt 4800+ pets from petdex.dev.",
-      "displayName": "ZCode 桌宠",
-      "displayName_i18n": {
+      "displayName": "zcode-pet 🐱",
+      "category": "fun",
+      "displayNameI18n": {
         "zh-CN": "ZCode 桌宠（矢量橘猫 + 宠物市场）"
       },
-      "category": "fun"
+      "author": "wsdone",
+      "authorUrl": "https://github.com/wsdone",
+      "homepage": "https://github.com/wsdone/zcode-pet",
+      "examplePrompts": [
+        "/pet status",
+        "/pet market",
+        "/pet feed"
+      ]
     }
   ]
 }
