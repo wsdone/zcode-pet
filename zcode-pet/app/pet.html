@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  :root {
+    --fur-1: #FFC775; --fur-2: #F59B33; --fur-3: #E8862A;
+    --cream: #FFF6E8; --cream-2: #FBEBD4;
+    --line: #B25E14; --eye: #3A2317; --nose: #F08A7A;
+    --blush: rgba(240, 120, 90, .35); --pink: #FFC0AB;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 100%; height: 100%; background: transparent; overflow: hidden;
+               font-family: -apple-system, "PingFang SC", sans-serif; user-select: none; cursor: default; }
+  #stage { position: absolute; inset: 0; }
+
+  /* ---------- 气泡 ---------- */
+  #bubble {
+    position: absolute; top: 6px; left: 50%; transform: translateX(-50%) translateY(-8px);
+    max-width: 216px; padding: 7px 12px; border-radius: 13px;
+    background: rgba(255,255,255,.97); border: 1.5px solid rgba(120,80,40,.25);
+    box-shadow: 0 4px 16px rgba(60,35,10,.18);
+    font-size: 12.5px; line-height: 1.45; color: #4A3428; text-align: center;
+    opacity: 0; transition: opacity .25s, transform .25s cubic-bezier(.2,1.4,.4,1); pointer-events: none;
+    white-space: pre-line;
+  }
+  #bubble.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  #bubble:after {
+    content: ""; position: absolute; bottom: -6px; left: 50%; width: 11px; height: 11px;
+    background: rgba(255,255,255,.97); border-right: 1.5px solid rgba(120,80,40,.25);
+    border-bottom: 1.5px solid rgba(120,80,40,.25);
+    transform: translateX(-50%) rotate(45deg);
+  }
+
+  /* ---------- SVG 猫通用 ---------- */
+  #cat { position: absolute; left: 50%; bottom: 14px; transform: translateX(-50%); height: 210px; }
+  .part { transition: opacity .3s; }
+
+  /* 呼吸 */
+  .state-idle #bodyG, .state-waiting #bodyG, .state-sleep #bodyG, .state-thinking #bodyG
+    { animation: breathe 3.2s ease-in-out infinite; transform-origin: 115px 238px; }
+  @keyframes breathe { 0%,100% { transform: scale(1,1); } 50% { transform: scale(1.012,1.03); } }
+
+  /* 眨眼（所有睁眼状态） */
+  .eye-lid { transform-origin: center; transform-box: fill-box; }
+  #cat:not(.no-blink) .eye-lid { animation: blink 4.6s infinite; }
+  @keyframes blink { 0%, 94%, 100% { transform: scaleY(0); } 96.5% { transform: scaleY(1); } }
+
+  /* 尾巴 */
+  #tail { transform-origin: 168px 205px; animation: tailSway 3.6s ease-in-out infinite; }
+  @keyframes tailSway { 0%,100% { transform: rotate(0deg); } 50% { transform: rotate(10deg); } }
+
+  /* 耳朵偶发抖动 */
+  #earL { transform-origin: 78px 92px; }
+  #earR { transform-origin: 152px 92px; }
+  #earR { animation: earTwitch 7s infinite; }
+  @keyframes earTwitch { 0%, 91%, 100% { transform: rotate(0); } 93% { transform: rotate(-7deg); } 95% { transform: rotate(4deg); } }
+
+  /* ---------- 状态专属 ---------- */
+  /* 思考：歪头 + 爪托腮 + 问号 */
+  .state-thinking #headG { animation: tilt 2.8s ease-in-out infinite; transform-origin: 115px 125px; }
+  @keyframes tilt { 0%,100% { transform: rotate(0); } 50% { transform: rotate(9deg); } }
+  .state-thinking #pawR { transform: translate(-14px,-26px) rotate(-24deg); }
+  .state-thinking #question { opacity: 1; animation: qFloat 2.2s ease-in-out infinite; }
+  @keyframes qFloat { 0%,100% { transform: translateY(0); opacity:.9; } 50% { transform: translateY(-6px); opacity:.55; } }
+
+  /* 跑动（Bash 等执行类） */
+  .state-running #catWhole { animation: runBob .5s ease-in-out infinite; }
+  @keyframes runBob { 0%,100% { transform: translateX(-46px) rotate(-6deg) translateY(0); }
+                      25% { transform: translateX(-46px) rotate(-6deg) translateY(-8px); }
+                      50% { transform: translateX(-54px) rotate(-6deg) translateY(0); }
+                      75% { transform: translateX(-46px) rotate(-6deg) translateY(-8px); } }
+  .state-running #speed { opacity: .8; }
+  .state-running #tail { animation: tailSway .45s ease-in-out infinite; }
+
+  /* 敲键盘（Edit/Write 等） */
+  .state-typing #keyboard { opacity: 1; }
+  .state-typing #pawL { animation: typeL .34s ease-in-out infinite; }
+  .state-typing #pawR { animation: typeR .34s ease-in-out infinite .17s; }
+  @keyframes typeL { 0%,100% { transform: translateY(0);} 50% { transform: translateY(-7px);} }
+  @keyframes typeR { 0%,100% { transform: translateY(-7px);} 50% { transform: translateY(0);} }
+
+  /* 看书/阅读（Read/Grep） */
+  .state-review #book { opacity: 1; }
+  .state-review #headG { transform: translateY(4px); }
+  .state-review #eyesG { transform: translateY(3px); }
+
+  /* 放大镜（Search） */
+  .state-search #magnifier { opacity: 1; animation: magWave 2.4s ease-in-out infinite; transform-origin: 175px 120px; }
+  @keyframes magWave { 0%,100% { transform: rotate(0); } 50% { transform: rotate(9deg); } }
+
+  /* 出错：耳朵塌、流泪、整体下沉 */
+  .state-failed #catWhole { transform: translateY(10px); }
+  .state-failed #earL { transform: rotate(-24deg) translateY(5px); }
+  .state-failed #earR { transform: rotate(24deg) translateY(5px); }
+  .state-failed .pupil { opacity: 0; }
+  .state-failed .eye-sad { opacity: 1; }
+  .state-failed #tears { opacity: 1; }
+  .state-failed #tear1 { animation: tearDrop 1.1s ease-in infinite; }
+  .state-failed #tear2 { animation: tearDrop 1.1s ease-in infinite .55s; }
+  @keyframes tearDrop { 0% { transform: translateY(0); opacity: .95; } 80% { transform: translateY(26px); opacity: .9; } 100% { transform: translateY(30px); opacity: 0; } }
+  .eye-sad { opacity: 0; }
+
+  /* 挥手喊确认 */
+  .state-waving #pawR { animation: waveArm .6s ease-in-out infinite; transform-origin: 160px 185px; }
+  @keyframes waveArm { 0%,100% { transform: rotate(-96deg); } 50% { transform: rotate(-118deg); } }
+  .state-waving #bang { opacity: 1; animation: qFloat 1s ease-in-out infinite; }
+
+  /* 庆祝跳跃 */
+  .state-jumping #catWhole { animation: jumpSq 1.15s cubic-bezier(.3,0,.2,1) infinite; }
+  @keyframes jumpSq { 0% { transform: translateY(0) scale(1,1); } 18% { transform: translateY(2px) scale(1.08,.9); }
+                       42% { transform: translateY(-30px) scale(.94,1.08); } 70% { transform: translateY(0) scale(1.05,.93); }
+                       85% { transform: translateY(0) scale(.98,1.03); } 100% { transform: translateY(0) scale(1,1); } }
+  .state-jumping #stars { opacity: 1; }
+  .state-jumping #star1 { animation: starTw 1.15s ease-in-out infinite; }
+  .state-jumping #star2 { animation: starTw 1.15s ease-in-out infinite .28s; }
+  .state-jumping #star3 { animation: starTw 1.15s ease-in-out infinite .56s; }
+  @keyframes starTw { 0%,100% { transform: scale(.5); opacity: .3; } 50% { transform: scale(1.15); opacity: 1; } }
+
+  /* 睡觉 */
+  .state-sleep .pupil { opacity: 0; } .state-sleep .eye-sad { opacity: 1; }
+  .state-sleep #zzz { opacity: 1; }
+  .state-sleep #z1 { animation: zFloat 3s ease-in-out infinite; }
+  .state-sleep #z2 { animation: zFloat 3s ease-in-out infinite 1.5s; }
+  @keyframes zFloat { 0% { transform: translate(0,4px) scale(.7); opacity: 0; } 30% { opacity: .95; }
+                      100% { transform: translate(10px,-26px) scale(1.15); opacity: 0; } }
+
+  /* 吃饭 */
+  .state-eating #bowl { opacity: 1; }
+  .state-eating #headG { animation: munch 0.5s ease-in-out infinite; transform-origin: 115px 130px; }
+  @keyframes munch { 0%,100% { transform: translateY(0) rotate(0); } 50% { transform: translateY(7px) rotate(3deg); } }
+
+  /* 被摸头 */
+  .state-petting .pupil { opacity: 0; } .state-petting .eye-happy { opacity: 1; }
+  .eye-happy { opacity: 0; }
+  .state-petting #heartFx { opacity: 1; animation: heartPop 1.4s ease-out infinite; }
+  @keyframes heartPop { 0% { transform: translateY(0) scale(.6); opacity: 0; } 30% { opacity: 1; }
+                        100% { transform: translateY(-30px) scale(1.2); opacity: 0; } }
+
+  /* ---------- 装饰 ---------- */
+  #bow, #bell, #crown { opacity: 0; transition: opacity .4s; }
+  .acc-1 #bow, .acc-2 #bell, .acc-3 #crown { opacity: 1; }
+
+  /* ---------- 精灵图模式（petdex / GIF） ---------- */
+  #sheet { position: absolute; left: 50%; bottom: 14px; transform: translateX(-50%);
+           image-rendering: auto; display: none;
+           background-repeat: no-repeat; }
+  body.custom #cat { display: none; }
+  body.custom #sheet { display: block; }
+  @keyframes sheetPlay { from { background-position-x: 0px; } to { background-position-x: var(--sheetStep, -1536px); } }
+  .row-0 #sheet { background-position-y: 0px; } .row-1 #sheet { background-position-y: -254px; }
+  .row-2 #sheet { background-position-y: -508px; } .row-3 #sheet { background-position-y: -762px; }
+  .row-4 #sheet { background-position-y: -1016px; } .row-5 #sheet { background-position-y: -1270px; }
+  .row-6 #sheet { background-position-y: -1524px; } .row-7 #sheet { background-position-y: -1778px; }
+  .row-8 #sheet { background-position-y: -2032px; }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div id="bubble"></div>
+
+  <svg id="cat" class="state-idle" viewBox="0 0 230 260" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="furGrad" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#FFD08A"/><stop offset=".5" stop-color="var(--fur-1)"/>
+        <stop offset="1" stop-color="var(--fur-2)"/>
+      </linearGradient>
+      <linearGradient id="headGrad" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#FFD69B"/><stop offset="1" stop-color="#FBB055"/>
+      </linearGradient>
+      <linearGradient id="creamGrad" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#FFFBF3"/><stop offset="1" stop-color="var(--cream-2)"/>
+      </linearGradient>
+      <radialGradient id="cheekGlow" cx=".5" cy=".5" r=".5">
+        <stop offset="0" stop-color="rgba(244,120,90,.5)"/><stop offset="1" stop-color="rgba(244,120,90,0)"/>
+      </radialGradient>
+      <filter id="soft" x="-30%" y="-30%" width="160%" height="160%">
+        <feDropShadow dx="0" dy="2" stdDeviation="2.4" flood-color="rgba(90,50,10,.22)"/>
+      </filter>
+      <filter id="ground" x="-50%" y="-50%" width="200%" height="200%">
+        <feGaussianBlur stdDeviation="6"/>
+      </filter>
+    </defs>
+
+    <ellipse cx="115" cy="247" rx="58" ry="9" fill="rgba(60,35,10,.30)" filter="url(#ground)"/>
+
+    <g id="catWhole">
+      <!-- 尾巴 -->
+      <g id="tail">
+        <path d="M 148 216 C 176 208 212 190 216 165 C 218 149 208 140 198 146
+                 C 191 150 192 158 196 164 C 192 182 172 194 150 199 Z"
+              fill="url(#furGrad)" filter="url(#soft)"/>
+        <path d="M 206 152 c 3 6 2 13 -2 18" stroke="var(--fur-3)" stroke-width="3" stroke-linecap="round" fill="none" opacity=".55"/>
+      </g>
+
+      <!-- 身体 -->
+      <g id="bodyG">
+        <path d="M 115 118 C 78 118 55 152 55 192 C 55 226 82 244 115 244
+                 C 148 244 175 226 175 192 C 175 152 152 118 115 118 Z"
+              fill="url(#furGrad)" filter="url(#soft)"/>
+        <ellipse cx="115" cy="212" rx="34" ry="27" fill="url(#creamGrad)"/>
+        <path d="M 74 165 q -8 8 -6 18" stroke="var(--fur-3)" stroke-width="3" fill="none" stroke-linecap="round" opacity=".5"/>
+        <path d="M 156 165 q 8 8 6 18" stroke="var(--fur-3)" stroke-width="3" fill="none" stroke-linecap="round" opacity=".5"/>
+        <path d="M 160 138 q 10 6 12 16" stroke="var(--fur-3)" stroke-width="3.2" fill="none" stroke-linecap="round" opacity=".5"/>
+        <path d="M 166 160 q 8 8 6 18" stroke="var(--fur-3)" stroke-width="3" fill="none" stroke-linecap="round" opacity=".45"/>
+        <!-- 后爪 -->
+        <ellipse cx="88" cy="241" rx="15" ry="8" fill="url(#creamGrad)"/>
+        <ellipse cx="142" cy="241" rx="15" ry="8" fill="url(#creamGrad)"/>
+        <!-- 前爪（可动） -->
+        <g id="pawL">
+          <ellipse cx="99" cy="236" rx="12" ry="9" fill="url(#creamGrad)" filter="url(#soft)"/>
+          <path d="M 95 243 l 0 -5 M 103 243 l 0 -5" stroke="rgba(160,100,50,.35)" stroke-width="1.6" stroke-linecap="round"/>
+        </g>
+        <g id="pawR">
+          <ellipse cx="131" cy="236" rx="12" ry="9" fill="url(#creamGrad)" filter="url(#soft)"/>
+          <path d="M 127 243 l 0 -5 M 135 243 l 0 -5" stroke="rgba(160,100,50,.35)" stroke-width="1.6" stroke-linecap="round"/>
+        </g>
+      </g>
+
+      <!-- 头 -->
+      <g id="headG">
+        <path id="earL" d="M 72 96 C 62 68 66 52 76 46 C 86 42 96 58 100 78 Z" fill="url(#furGrad)" filter="url(#soft)"/>
+        <path id="earR" d="M 158 96 C 168 68 164 52 154 46 C 144 42 134 58 130 78 Z" fill="url(#furGrad)" filter="url(#soft)"/>
+        <path d="M 76 88 C 72 72 74 62 79 58 C 84 56 90 66 92 78 Z" fill="var(--pink)" opacity=".85"/>
+        <path d="M 154 88 C 158 72 156 62 151 58 C 146 56 140 66 138 78 Z" fill="var(--pink)" opacity=".85"/>
+
+        <path d="M 115 62 C 78 62 58 88 58 118 C 58 150 82 168 115 168
+                 C 148 168 172 150 172 118 C 172 88 152 62 115 62 Z"
+              fill="url(#headGrad)" filter="url(#soft)"/>
+        <!-- 额头纹 -->
+        <path d="M 103 74 q 4 8 0 15" stroke="var(--fur-3)" stroke-width="3" fill="none" stroke-linecap="round" opacity=".55"/>
+        <path d="M 115 71 q 3 9 0 18" stroke="var(--fur-3)" stroke-width="3" fill="none" stroke-linecap="round" opacity=".55"/>
+        <path d="M 127 74 q -4 8 0 15" stroke="var(--fur-3)" stroke-width="3" fill="none" stroke-linecap="round" opacity=".55"/>
+
+        <!-- 眼睛 -->
+        <g id="eyesG">
+          <g class="eye">
+            <ellipse cx="93" cy="118" rx="10.5" ry="12.5" fill="var(--eye)"/>
+            <circle cx="96.5" cy="113.5" r="3.4" fill="#fff"/>
+            <circle cx="90" cy="122" r="1.6" fill="#fff" opacity=".85"/>
+            <rect class="eye-lid" x="82" y="104" width="22" height="28" fill="url(#headGrad)"/>
+          </g>
+          <g class="eye">
+            <ellipse cx="137" cy="118" rx="10.5" ry="12.5" fill="var(--eye)"/>
+            <circle cx="140.5" cy="113.5" r="3.4" fill="#fff"/>
+            <circle cx="134" cy="122" r="1.6" fill="#fff" opacity=".85"/>
+            <rect class="eye-lid" x="126" y="104" width="22" height="28" fill="url(#headGrad)"/>
+          </g>
+          <path class="eye-sad" d="M 85 118 q 8 -7 16 0" stroke="var(--eye)" stroke-width="3" fill="none" stroke-linecap="round"/>
+          <path class="eye-sad" d="M 129 118 q 8 -7 16 0" stroke="var(--eye)" stroke-width="3" fill="none" stroke-linecap="round"/>
+          <path class="eye-happy" d="M 85 116 q 8 8 16 0" stroke="var(--eye)" stroke-width="3" fill="none" stroke-linecap="round"/>
+          <path class="eye-happy" d="M 129 116 q 8 8 16 0" stroke="var(--eye)" stroke-width="3" fill="none" stroke-linecap="round"/>
+        </g>
+
+        <ellipse cx="80" cy="139" rx="14" ry="9" fill="url(#cheekGlow)"/>
+        <ellipse cx="150" cy="139" rx="14" ry="9" fill="url(#cheekGlow)"/>
+        <ellipse cx="80" cy="139" rx="7.5" ry="4.5" fill="rgba(244,110,85,.38)"/>
+        <ellipse cx="150" cy="139" rx="7.5" ry="4.5" fill="rgba(244,110,85,.38)"/>
+
+        <!-- 口鼻 -->
+        <path d="M 115 126 C 106 126 100 132 100 140 C 100 152 106 158 115 158
+                 C 124 158 130 152 130 140 C 130 132 124 126 115 126 Z" fill="url(#creamGrad)"/>
+        <path d="M 109 132 L 121 132 L 115 139 Z" fill="var(--nose)"/>
+        <path d="M 115 139 q -6 8 -11 2 M 115 139 q 6 8 11 2" stroke="var(--line)" stroke-width="2.2"
+              fill="none" stroke-linecap="round" opacity=".8"/>
+        <!-- 胡须 -->
+        <g stroke="rgba(120,75,35,.45)" stroke-width="1.6" stroke-linecap="round">
+          <path d="M 88 136 L 68 132"/><path d="M 88 142 L 68 144"/>
+          <path d="M 142 136 L 162 132"/><path d="M 142 142 L 162 144"/>
+        </g>
+
+        <!-- 装饰：蝴蝶结 / 铃铛 / 皇冠 -->
+        <g id="bow">
+          <path d="M 88 66 C 80 58 72 60 72 68 C 72 76 80 80 88 78 Z" fill="#F26D6D"/>
+          <path d="M 96 66 C 104 58 112 60 112 68 C 112 76 104 80 96 78 Z" fill="#F26D6D"/>
+          <circle cx="92" cy="72" r="5" fill="#D94F4F"/>
+        </g>
+        <g id="bell">
+          <path d="M 96 164 q 19 10 38 0 l 0 5 q -19 9 -38 0 Z" fill="#E8493F" opacity=".9"/>
+          <circle cx="115" cy="176" r="8.5" fill="url(#creamGrad)" stroke="#D9A73F" stroke-width="2.5"/>
+          <path d="M 109 176 h 12" stroke="#B8862F" stroke-width="2.5" stroke-linecap="round"/>
+          <circle cx="115" cy="181" r="1.8" fill="#8A6524"/>
+        </g>
+        <g id="crown">
+          <path d="M 92 58 L 98 44 L 106 54 L 115 40 L 124 54 L 132 44 L 138 58
+                   C 132 64 98 64 92 58 Z" fill="#FFD24C" stroke="#E0A62C" stroke-width="2" stroke-linejoin="round"/>
+          <circle cx="115" cy="52" r="2.6" fill="#F26D6D"/>
+        </g>
+      </g>
+
+      <!-- 道具（默认隐藏） -->
+      <g id="question" class="part" opacity="0">
+        <text x="196" y="86" font-size="30" font-weight="700" fill="#8A6CD9">?</text>
+      </g>
+      <g id="bang" class="part" opacity="0">
+        <text x="112" y="34" font-size="34" font-weight="800" fill="#F25C3D">!</text>
+      </g>
+      <g id="speed" class="part" opacity="0" stroke="#F5B263" stroke-width="3.5" stroke-linecap="round">
+        <path d="M 34 150 h -18"/><path d="M 30 176 h -14"/><path d="M 36 202 h -20"/>
+      </g>
+      <g id="keyboard" class="part" opacity="0">
+        <rect x="63" y="236" width="104" height="15" rx="5" fill="#E8E3DB" stroke="#C9C2B6" stroke-width="1.5"/>
+        <g fill="#B9B2A4"><rect x="70" y="240" width="7" height="6" rx="1.5"/><rect x="81" y="240" width="7" height="6" rx="1.5"/>
+        <rect x="92" y="240" width="7" height="6" rx="1.5"/><rect x="103" y="240" width="7" height="6" rx="1.5"/>
+        <rect x="114" y="240" width="7" height="6" rx="1.5"/><rect x="125" y="240" width="7" height="6" rx="1.5"/>
+        <rect x="136" y="240" width="7" height="6" rx="1.5"/><rect x="147" y="240" width="12" height="6" rx="1.5"/></g>
+      </g>
+      <g id="book" class="part" opacity="0">
+        <path d="M 72 200 C 88 194 104 194 115 200 C 126 194 142 194 158 200 L 158 224
+                 C 142 218 126 218 115 224 C 104 218 88 218 72 224 Z" fill="#F6F1E7" stroke="#C9BFA9" stroke-width="2"/>
+        <path d="M 115 200 V 224" stroke="#C9BFA9" stroke-width="2"/>
+        <g stroke="#B9AE93" stroke-width="2" stroke-linecap="round">
+          <path d="M 80 205 h 24"/><path d="M 80 211 h 24"/><path d="M 126 205 h 24"/><path d="M 126 211 h 24"/>
+        </g>
+      </g>
+      <g id="magnifier" class="part" opacity="0">
+        <circle cx="176" cy="118" r="17" fill="rgba(140,200,255,.4)" stroke="#8A9BAC" stroke-width="5"/>
+        <path d="M 164 130 L 150 146" stroke="#8A9BAC" stroke-width="7" stroke-linecap="round"/>
+        <path d="M 170 108 l 8 -6" stroke="#fff" stroke-width="3" stroke-linecap="round" opacity=".8"/>
+      </g>
+      <g id="bowl" class="part" opacity="0">
+        <path d="M 82 228 C 82 244 96 252 115 252 C 134 252 148 244 148 228 Z" fill="#7FB5E8" stroke="#5E93C9" stroke-width="2.5"/>
+        <ellipse cx="115" cy="228" rx="33" ry="7" fill="#9CCBF5" stroke="#5E93C9" stroke-width="2"/>
+        <path d="M 106 224 c 3 -4 8 -4 9 0 c 2 -3 7 -3 9 1" stroke="#E8776D" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+      </g>
+      <g id="tears" class="part" opacity="0">
+        <path id="tear1" d="M 88 128 c -3.5 6 -3.5 10 0 12 c 3.5 -2 3.5 -6 0 -12 Z" fill="#7EC3F0"/>
+        <path id="tear2" d="M 142 128 c -3.5 6 -3.5 10 0 12 c 3.5 -2 3.5 -6 0 -12 Z" fill="#7EC3F0"/>
+      </g>
+      <g id="stars" class="part" opacity="0" fill="#FFD24C">
+        <path id="star1" d="M 46 96 l 3 7 7 1 -5 5 1 7 -6 -3 -6 3 1 -7 -5 -5 7 -1 Z"/>
+        <path id="star2" d="M 178 84 l 3 7 7 1 -5 5 1 7 -6 -3 -6 3 1 -7 -5 -5 7 -1 Z"/>
+        <path id="star3" d="M 112 30 l 3 7 7 1 -5 5 1 7 -6 -3 -6 3 1 -7 -5 -5 7 -1 Z"/>
+      </g>
+      <g id="zzz" class="part" opacity="0" fill="#9DB7D9" font-weight="700">
+        <text id="z1" x="168" y="72" font-size="20">z</text>
+        <text id="z2" x="182" y="52" font-size="15">z</text>
+      </g>
+      <g id="heartFx" class="part" opacity="0">
+        <path d="M 118 60 c -4 -8 -16 -6 -16 3 c 0 7 10 12 16 16 c 6 -4 16 -9 16 -16
+                 c 0 -9 -12 -11 -16 -3 Z" fill="#F26D6D"/>
+      </g>
+    </g>
+  </svg>
+
+  <div id="sheet"></div>
+</div>
+
+<script>
+  const $ = id => document.getElementById(id);
+  const cat = $("cat"), bubble = $("bubble"), body = document.body;
+  let bubbleTimer = null;
+
+  // 状态 → (svg class, sheet 行号[petdex 9 行])
+  // petdex 官方行序: 0 idle,1 running-right,2 running-left,3 waving,4 jumping,
+  //                  5 failed,6 waiting,7 running,8 review
+  const MAP = {
+    greet:      { cls: "state-jumping",  row: 4 },
+    thinking:   { cls: "state-thinking", row: 8 },
+    "working:bash":   { cls: "state-running", row: 7 },
+    "working:type":   { cls: "state-typing",  row: 8 },
+    "working:read":   { cls: "state-review",  row: 8 },
+    "working:search": { cls: "state-search",  row: 8 },
+    error:      { cls: "state-failed",   row: 5 },
+    attention:  { cls: "state-waving",   row: 3 },
+    celebrate:  { cls: "state-jumping",  row: 4 },
+    waiting:    { cls: "state-waiting",  row: 6 },
+    idle:       { cls: "state-idle",     row: 0 },
+    sleep:      { cls: "state-sleep",    row: 6 },
+    eating:     { cls: "state-eating",   row: 0 },
+    petting:    { cls: "state-petting",  row: 3 },
+  };
+  // petdex 每行实际帧数与时长（行内未用格子留空，steps 必须按实际帧数）
+  const SHEET_ROWS = { 0:[6,1100], 1:[8,1060], 2:[8,1060], 3:[4,700], 4:[5,840],
+                       5:[8,1220], 6:[6,1010], 7:[6,820],  8:[6,1030] };
+  let sheetCfg = null;
+
+  function toolFlavor(tool) {
+    const t = (tool || "").toLowerCase();
+    if (t.includes("bash") || t.includes("shell") || t.includes("exec")) return "bash";
+    if (t.includes("search") || t.includes("fetch") || t.includes("web")) return "search";
+    if (t.includes("read") || t.includes("grep") || t.includes("glob")) return "read";
+    return "type";
+  }
+
+  function setStatus(status, tool) {
+    let key = status;
+    if (status === "working") key = "working:" + toolFlavor(tool);
+    if (status === "greet") key = "greet";
+    const m = MAP[key] || MAP.idle;
+    cat.setAttribute("class", m.cls);
+    document.querySelectorAll(".row-0,.row-1,.row-2,.row-3,.row-4,.row-5,.row-6,.row-7,.row-8")
+      .forEach(el => el === body && el.classList.remove("row-0","row-1","row-2","row-3","row-4","row-5","row-6","row-7","row-8"));
+    body.className = body.className.replace(/row-\d/g, "").trim();
+    body.classList.add("row-" + m.row);
+    if (sheetCfg) applyRowAnim(m.row);
+  }
+
+  function applyRowAnim(row) {
+    const sheet = $("sheet");
+    const spec = SHEET_ROWS[row] || [sheetCfg.cols, 1000];
+    const frames = Math.min(spec[0], sheetCfg.cols);
+    const dur = spec[1] + "ms";
+    const step = -(frames * sheetCfg._dispW);
+    sheet.style.setProperty("--sheetStep", step.toFixed(1) + "px");
+    sheet.style.animation = `sheetPlay ${dur} steps(${frames}) infinite`;
+  }
+
+  function setBubble(text, seconds) {
+    bubble.textContent = text;
+    bubble.classList.add("show");
+    clearTimeout(bubbleTimer);
+    if (seconds > 0) bubbleTimer = setTimeout(() => bubble.classList.remove("show"), seconds * 1000);
+  }
+  function hideBubble() { clearTimeout(bubbleTimer); bubble.classList.remove("show"); }
+
+  function setTier(t) { cat.classList.remove("acc-1","acc-2","acc-3"); if (t>0) cat.classList.add("acc-"+Math.min(t,3)); }
+  function setHungry(h) { document.documentElement.classList.toggle("hungry", h); }
+  function fx(name) { // feed/pet 等瞬时反馈走气泡即可,动画由状态类驱动
+    if (name === "feed") setStatus("eating", "");
+    if (name === "pet") setStatus("petting", "");
+  }
+
+  // ---- 精灵图模式 ----
+  // cfg: {mode:"sheet", path, frameW, frameH, cols, rows, fps}
+  function setCustomPet(cfg) {
+    if (!cfg || cfg.mode !== "sheet") { body.classList.remove("custom"); return; }
+    const sheet = $("sheet");
+    const scale = Math.min(230 / cfg.frameW, 260 / cfg.frameH) * 0.92;
+    const w = cfg.frameW * scale, h = cfg.frameH * scale;
+    sheet.style.width = w + "px"; sheet.style.height = h + "px";
+    sheet.style.backgroundImage = `url(file://${cfg.path})`;
+    sheet.style.backgroundSize = `${cfg.cols * w}px ${cfg.rows * h}px`;
+    cfg._dispW = w;
+    sheetCfg = cfg;
+    // 行偏移按比例重写（CSS 预置的是固定 254px,这里用 JS 覆盖）
+    for (let r = 0; r < 9 && r < cfg.rows; r++) {
+      document.styleSheets[0].insertRule(
+        `.row-${r} #sheet { background-position-y: ${-(r * h).toFixed(1)}px !important; }`, 0);
+    }
+    body.classList.add("custom");
+  }
+
+  // Swift 侧入口
+  window.setStatus = setStatus;
+  window.setBubble = setBubble;
+  window.setTier = setTier;
+  window.setHungry = setHungry;
+  window.setCustomPet = setCustomPet;
+  window.fx = fx;
+</script>
+</body>
+</html>

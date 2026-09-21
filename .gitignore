@@ -1,0 +1,4 @@
+*.bak
+zcode-pet/zcode-pet-bin
+.DS_Store
+node_modules/
