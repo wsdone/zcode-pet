@@ -94,7 +94,18 @@ function toPetState(input) {
       };
     case "Stop": {
       const count = Number(pick(input, "toolCallCount") || 0);
-      return { ...base, status: count > 0 ? "celebrate" : "waiting", toolCallCount: count };
+      if (count <= 0) return { ...base, status: "waiting" };
+      // 庆祝冷却：回合高频结束时会像多动症一样连跳，45s 内只庆祝一次
+      let lastCelebrateAt = 0;
+      try {
+        const prev = JSON.parse(fs.readFileSync(STATE_PATH, "utf8"));
+        lastCelebrateAt = Number(prev.celebrateAt || 0);
+      } catch {}
+      const now = Date.now();
+      if (now - lastCelebrateAt < 45_000) {
+        return { ...base, status: "waiting", toolCallCount: count };
+      }
+      return { ...base, status: "celebrate", celebrateAt: now, toolCallCount: count };
     }
     default:
       return { ...base, status: "idle" };

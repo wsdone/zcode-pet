@@ -7,7 +7,7 @@
     {
       "name": "zcode-pet",
       "source": "./zcode-pet",
-      "version": "0.3.2",
+      "version": "0.3.3",
       "description": "Desktop pet that mirrors your ZCode agent state — thinking, working, waiting for confirmation, error, done. Feeding & affinity, plus a marketplace to adopt 4800+ pets from petdex.dev.",
       "displayName": "zcode-pet 🐱",
       "category": "fun",

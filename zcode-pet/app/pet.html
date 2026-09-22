@@ -38,7 +38,7 @@
 
   /* 呼吸 */
   .state-idle #bodyG, .state-waiting #bodyG, .state-sleep #bodyG, .state-thinking #bodyG
-    { animation: breathe 3.2s ease-in-out infinite; transform-origin: 115px 238px; }
+    { animation: breathe 5.2s ease-in-out infinite; transform-origin: 115px 238px; }
   @keyframes breathe { 0%,100% { transform: scale(1,1); } 50% { transform: scale(1.012,1.03); } }
 
   /* 眨眼（所有睁眼状态） */
@@ -47,7 +47,7 @@
   @keyframes blink { 0%, 94%, 100% { transform: scaleY(0); } 96.5% { transform: scaleY(1); } }
 
   /* 尾巴 */
-  #tail { transform-origin: 168px 205px; animation: tailSway 3.6s ease-in-out infinite; }
+  #tail { transform-origin: 168px 205px; animation: tailSway 6.5s ease-in-out infinite; }
   @keyframes tailSway { 0%,100% { transform: rotate(0deg); } 50% { transform: rotate(10deg); } }
 
   /* 耳朵偶发抖动 */
@@ -125,10 +125,49 @@
   @keyframes zFloat { 0% { transform: translate(0,4px) scale(.7); opacity: 0; } 30% { opacity: .95; }
                       100% { transform: translate(10px,-26px) scale(1.15); opacity: 0; } }
 
-  /* 吃饭 */
+  /* 吃饭：低头凑碗 + 嘴嚼 + 热气 + 尾巴开心快摆 */
   .state-eating #bowl { opacity: 1; }
-  .state-eating #headG { animation: munch 0.5s ease-in-out infinite; transform-origin: 115px 130px; }
-  @keyframes munch { 0%,100% { transform: translateY(0) rotate(0); } 50% { transform: translateY(7px) rotate(3deg); } }
+  .state-eating #headG {
+    animation: eatHead 2.6s ease-in-out both;
+    transform-origin: 115px 150px;
+  }
+  @keyframes eatHead {
+    0%   { transform: translateY(0) rotate(0deg); }
+    12%  { transform: translateY(17px) rotate(7deg); }
+    88%  { transform: translateY(17px) rotate(7deg); }
+    100% { transform: translateY(0) rotate(0deg); }
+  }
+  .state-eating #mouth { animation: chew 0.34s ease-in-out infinite; transform-origin: 115px 139px; }
+  @keyframes chew { 0%,100% { transform: scaleY(1); } 50% { transform: scaleY(0.45) scaleX(1.12); } }
+  .state-eating .steam { animation: steamUp 1.9s ease-out infinite; }
+  .state-eating .steam.s2 { animation-delay: .95s; }
+  @keyframes steamUp {
+    0%   { transform: translate(0,0) scale(.8); opacity: 0; }
+    25%  { opacity: .75; }
+    100% { transform: translate(3px,-16px) scale(1.1); opacity: 0; }
+  }
+  .state-eating #tail { animation: tailSway 1.5s ease-in-out infinite; }
+  /* 精灵图模式吃饭反馈：轻微咀嚼起伏 + 饭团浮现 */
+  .state-eating #sheet { animation-name: sheetEat !important; }
+  @keyframes sheetEat { 0%,100% { transform: translateX(-50%) translateY(0); }
+                        50% { transform: translateX(-50%) translateY(2.5px); } }
+  /* 状态浮标：仅精灵图模式（SVG 猫自带道具），补足 9 行之外的语义 */
+  #badge { position: absolute; left: 50%; top: 26px; transform: translate(28px, 0);
+           font-size: 20px; opacity: 0; pointer-events: none; transition: opacity .25s;
+           filter: drop-shadow(0 1px 2px rgba(0,0,0,.25)); }
+  body.custom .state-thinking #badge { opacity: 1; animation: badgeBob 1.6s ease-in-out infinite; }
+  body.custom .state-sleep #badge    { opacity: 1; animation: badgeBob 2.4s ease-in-out infinite; }
+  body.custom .state-error #badge    { opacity: 1; animation: badgeShake .5s ease-in-out infinite; }
+  body.custom .state-jumping #badge  { opacity: 1; animation: badgeBob .6s ease-in-out infinite; }
+  body.custom .state-eating #badge   { opacity: 1; animation: badgeBob 1.2s ease-in-out infinite; }
+  @keyframes badgeBob  { 0%,100% { transform: translate(28px, 0); } 50% { transform: translate(28px, -5px); } }
+  @keyframes badgeShake { 0%,100% { transform: translate(26px, 0) rotate(-8deg); } 50% { transform: translate(30px, 0) rotate(8deg); } }
+
+  #fxRice { position: absolute; left: 50%; bottom: 175px; transform: translateX(-50%);
+            font-size: 22px; opacity: 0; pointer-events: none; }
+  .state-eating #fxRice { animation: riceFloat 1.3s ease-in-out infinite; }
+  @keyframes riceFloat { 0%,100% { opacity: .55; transform: translateX(-50%) translateY(0) rotate(-8deg); }
+                         50% { opacity: 1; transform: translateX(-50%) translateY(-6px) rotate(8deg); } }
 
   /* 被摸头 */
   .state-petting .pupil { opacity: 0; } .state-petting .eye-happy { opacity: 1; }
@@ -262,7 +301,7 @@
         <path d="M 115 126 C 106 126 100 132 100 140 C 100 152 106 158 115 158
                  C 124 158 130 152 130 140 C 130 132 124 126 115 126 Z" fill="url(#creamGrad)"/>
         <path d="M 109 132 L 121 132 L 115 139 Z" fill="var(--nose)"/>
-        <path d="M 115 139 q -6 8 -11 2 M 115 139 q 6 8 11 2" stroke="var(--line)" stroke-width="2.2"
+        <path id="mouth" d="M 115 139 q -6 8 -11 2 M 115 139 q 6 8 11 2" stroke="var(--line)" stroke-width="2.2"
               fill="none" stroke-linecap="round" opacity=".8"/>
         <!-- 胡须 -->
         <g stroke="rgba(120,75,35,.45)" stroke-width="1.6" stroke-linecap="round">
@@ -323,6 +362,12 @@
         <path d="M 82 228 C 82 244 96 252 115 252 C 134 252 148 244 148 228 Z" fill="#7FB5E8" stroke="#5E93C9" stroke-width="2.5"/>
         <ellipse cx="115" cy="228" rx="33" ry="7" fill="#9CCBF5" stroke="#5E93C9" stroke-width="2"/>
         <path d="M 106 224 c 3 -4 8 -4 9 0 c 2 -3 7 -3 9 1" stroke="#E8776D" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+        <g class="steam" fill="none" stroke="rgba(255,255,255,.85)" stroke-width="2.4" stroke-linecap="round">
+          <path d="M 105 218 q -2 -5 1 -9"/><path d="M 115 216 q 2 -5 -1 -9"/><path d="M 125 218 q -2 -5 1 -9"/>
+        </g>
+        <g class="steam s2" fill="none" stroke="rgba(255,255,255,.85)" stroke-width="2.4" stroke-linecap="round">
+          <path d="M 110 219 q -2 -5 1 -9"/><path d="M 120 219 q 2 -5 -1 -9"/>
+        </g>
       </g>
       <g id="tears" class="part" opacity="0">
         <path id="tear1" d="M 88 128 c -3.5 6 -3.5 10 0 12 c 3.5 -2 3.5 -6 0 -12 Z" fill="#7EC3F0"/>
@@ -345,6 +390,8 @@
   </svg>
 
   <div id="sheet"></div>
+  <div id="fxRice">🍚</div>
+  <div id="badge">💭</div>
 </div>
 
 <script>
@@ -355,25 +402,28 @@
   // 状态 → (svg class, sheet 行号[petdex 9 行])
   // petdex 官方行序: 0 idle,1 running-right,2 running-left,3 waving,4 jumping,
   //                  5 failed,6 waiting,7 running,8 review
+  // sheetRow：精灵图模式使用的行。working 全家统一 running(7)、thinking 统一 review(8)，
+  // 避免 agent 连续切换工具时 running↔review 两行狂跳（多动症根源）。
   const MAP = {
-    greet:      { cls: "state-jumping",  row: 4 },
-    thinking:   { cls: "state-thinking", row: 8 },
-    "working:bash":   { cls: "state-running", row: 7 },
-    "working:type":   { cls: "state-typing",  row: 8 },
-    "working:read":   { cls: "state-review",  row: 8 },
-    "working:search": { cls: "state-search",  row: 8 },
-    error:      { cls: "state-failed",   row: 5 },
-    attention:  { cls: "state-waving",   row: 3 },
-    celebrate:  { cls: "state-jumping",  row: 4 },
-    waiting:    { cls: "state-waiting",  row: 6 },
-    idle:       { cls: "state-idle",     row: 0 },
-    sleep:      { cls: "state-sleep",    row: 6 },
-    eating:     { cls: "state-eating",   row: 0 },
-    petting:    { cls: "state-petting",  row: 3 },
+    greet:      { cls: "state-jumping",  row: 4, sheetRow: 4 },
+    thinking:   { cls: "state-thinking", row: 8, sheetRow: 8 },
+    "working:bash":   { cls: "state-running", row: 7, sheetRow: 7 },
+    "working:type":   { cls: "state-typing",  row: 8, sheetRow: 7 },
+    "working:read":   { cls: "state-review",  row: 8, sheetRow: 7 },
+    "working:search": { cls: "state-search",  row: 8, sheetRow: 7 },
+    error:      { cls: "state-failed",   row: 5, sheetRow: 5 },
+    attention:  { cls: "state-waving",   row: 3, sheetRow: 3 },
+    celebrate:  { cls: "state-jumping",  row: 4, sheetRow: 4 },
+    waiting:    { cls: "state-waiting",  row: 6, sheetRow: 6 },
+    idle:       { cls: "state-idle",     row: 0, sheetRow: 0 },
+    sleep:      { cls: "state-sleep",    row: 6, sheetRow: 6 },
+    eating:     { cls: "state-eating",   row: 0, sheetRow: 0 },
+    petting:    { cls: "state-petting",  row: 3, sheetRow: 3 },
   };
   // petdex 每行实际帧数与时长（行内未用格子留空，steps 必须按实际帧数）
-  const SHEET_ROWS = { 0:[6,1100], 1:[8,1060], 2:[8,1060], 3:[4,700], 4:[5,840],
-                       5:[8,1220], 6:[6,1010], 7:[6,820],  8:[6,1030] };
+  // 待机类放慢（官方速率偏闹），干活/庆祝保持活力
+  const SHEET_ROWS = { 0:[6,2000], 1:[8,1060], 2:[8,1060], 3:[4,700], 4:[5,840],
+                       5:[8,1600], 6:[6,2000], 7:[6,820],  8:[6,1700] };
   let sheetCfg = null;
 
   function toolFlavor(tool) {
@@ -384,17 +434,38 @@
     return "type";
   }
 
+  let lastSwitchAt = 0, pendingTimer = null, currentCls = "", currentRow = -1;
+  const URGENT = new Set(["state-waving", "state-failed", "state-jumping"]);
+
   function setStatus(status, tool) {
     let key = status;
     if (status === "working") key = "working:" + toolFlavor(tool);
     if (status === "greet") key = "greet";
     const m = MAP[key] || MAP.idle;
+    const targetRow = sheetCfg ? (m.sheetRow ?? m.row) : m.row;
+
+    // SVG 模式：同类幂等；sheet 模式：同行幂等（不重启动画）
+    if (m.cls === currentCls && targetRow === currentRow) return;
+
+    const now = Date.now();
+    // 紧急状态（喊你确认/出错/庆祝）立即切换；普通状态至少停留 700ms，防高频事件抖动
+    if (!URGENT.has(m.cls) && now - lastSwitchAt < 700) {
+      clearTimeout(pendingTimer);
+      pendingTimer = setTimeout(() => setStatus(status, tool), 700 - (now - lastSwitchAt));
+      return;
+    }
+    clearTimeout(pendingTimer);
+    currentCls = m.cls; currentRow = targetRow; lastSwitchAt = now;
+    const badgeEl = $("badge");
+    if (badgeEl) badgeEl.textContent =
+      m.cls === "state-thinking" ? "💭" :
+      m.cls === "state-sleep" ? "💤" :
+      m.cls === "state-error" ? "💢" :
+      m.cls === "state-jumping" ? "✨" : "💭";
     cat.setAttribute("class", m.cls);
-    document.querySelectorAll(".row-0,.row-1,.row-2,.row-3,.row-4,.row-5,.row-6,.row-7,.row-8")
-      .forEach(el => el === body && el.classList.remove("row-0","row-1","row-2","row-3","row-4","row-5","row-6","row-7","row-8"));
     body.className = body.className.replace(/row-\d/g, "").trim();
-    body.classList.add("row-" + m.row);
-    if (sheetCfg) applyRowAnim(m.row);
+    body.classList.add("row-" + targetRow);
+    if (sheetCfg) applyRowAnim(targetRow);
   }
 
   function applyRowAnim(row) {
