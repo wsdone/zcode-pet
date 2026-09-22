@@ -628,6 +628,12 @@ final class PetController: NSObject, NSWindowDelegate {
         case "dress":
             if let name = obj["name"] as? String { dress(name) }
         case "market": openMarket()
+        case "eval":
+            if let js = obj["js"] as? String {
+                host.webView.evaluateJavaScript(js) { r, e in
+                    petlog("eval: \(String(describing: r)) err=\(String(describing: e))")
+                }
+            }
         case "market-eval":
             if let js = obj["js"] as? String {
                 MarketController.shared.eval(js)

@@ -183,7 +183,7 @@
   /* ---------- 精灵图模式（petdex / GIF） ---------- */
   #sheet { position: absolute; left: 50%; bottom: 14px; transform: translateX(-50%);
            image-rendering: auto; display: none;
-           background-repeat: no-repeat;
+           background-repeat: no-repeat; transition: opacity .18s ease;
            filter: drop-shadow(0 3px 5px rgba(50, 30, 10, 0.32)) drop-shadow(0 1px 2px rgba(50, 30, 10, 0.18)); }
   body.custom #cat { display: none; }
   body.custom #sheet { display: block; }
@@ -406,7 +406,7 @@
   // 避免 agent 连续切换工具时 running↔review 两行狂跳（多动症根源）。
   const MAP = {
     greet:      { cls: "state-jumping",  row: 4, sheetRow: 4 },
-    thinking:   { cls: "state-thinking", row: 8, sheetRow: 8 },
+    thinking:   { cls: "state-thinking", row: 8, sheetRow: 0 },
     "working:bash":   { cls: "state-running", row: 7, sheetRow: 7 },
     "working:type":   { cls: "state-typing",  row: 8, sheetRow: 7 },
     "working:read":   { cls: "state-review",  row: 8, sheetRow: 7 },
@@ -416,7 +416,7 @@
     celebrate:  { cls: "state-jumping",  row: 4, sheetRow: 4 },
     waiting:    { cls: "state-waiting",  row: 6, sheetRow: 6 },
     idle:       { cls: "state-idle",     row: 0, sheetRow: 0 },
-    sleep:      { cls: "state-sleep",    row: 6, sheetRow: 6 },
+    sleep:      { cls: "state-sleep",    row: 6, sheetRow: 0 },
     eating:     { cls: "state-eating",   row: 0, sheetRow: 0 },
     petting:    { cls: "state-petting",  row: 3, sheetRow: 3 },
   };
@@ -448,14 +448,14 @@
     if (m.cls === currentCls && targetRow === currentRow) return;
 
     const now = Date.now();
-    // 紧急状态（喊你确认/出错/庆祝）立即切换；普通状态至少停留 700ms，防高频事件抖动
-    if (!URGENT.has(m.cls) && now - lastSwitchAt < 700) {
+    // 紧急状态（喊你确认/出错/庆祝）立即切换；普通状态至少停留 1200ms，防高频事件抖动
+    if (!URGENT.has(m.cls) && now - lastSwitchAt < 1200) {
       clearTimeout(pendingTimer);
-      pendingTimer = setTimeout(() => setStatus(status, tool), 700 - (now - lastSwitchAt));
+      pendingTimer = setTimeout(() => setStatus(status, tool), 1200 - (now - lastSwitchAt));
       return;
     }
     clearTimeout(pendingTimer);
-    currentCls = m.cls; currentRow = targetRow; lastSwitchAt = now;
+    currentCls = m.cls; lastSwitchAt = now;
     const badgeEl = $("badge");
     if (badgeEl) badgeEl.textContent =
       m.cls === "state-thinking" ? "💭" :
@@ -463,19 +463,53 @@
       m.cls === "state-error" ? "💢" :
       m.cls === "state-jumping" ? "✨" : "💭";
     cat.setAttribute("class", m.cls);
-    body.className = body.className.replace(/row-\d/g, "").trim();
-    body.classList.add("row-" + targetRow);
-    if (sheetCfg) applyRowAnim(targetRow);
+    const apply = () => {
+      currentRow = targetRow;
+      body.className = body.className.replace(/row-\d/g, "").trim();
+      body.classList.add("row-" + targetRow);
+      if (sheetCfg) applyRowAnim(targetRow);
+    };
+    if (sheetCfg && currentRow !== -1 && targetRow !== currentRow) {
+      const sheet = $("sheet");
+      sheet.style.opacity = "0";
+      setTimeout(() => { apply(); sheet.style.opacity = "1"; }, 180);
+    } else {
+      apply();
+    }
   }
 
-  function applyRowAnim(row) {
+  // 待机行（idle/waiting）：静帧为主，每 6-14s 随机播一轮小动作——像真猫趴着偶尔动一下
+  const AMBIENT_ROWS = new Set([0, 6]);
+  let idleBurstTimer = null, idleBurstEnd = null;
+
+  function playRow(row) {
     const sheet = $("sheet");
     const spec = SHEET_ROWS[row] || [sheetCfg.cols, 1000];
     const frames = Math.min(spec[0], sheetCfg.cols);
-    const dur = spec[1] + "ms";
-    const step = -(frames * sheetCfg._dispW);
-    sheet.style.setProperty("--sheetStep", step.toFixed(1) + "px");
-    sheet.style.animation = `sheetPlay ${dur} steps(${frames}) infinite`;
+    sheet.style.setProperty("--sheetStep", -(frames * sheetCfg._dispW).toFixed(1) + "px");
+    sheet.style.animation = `sheetPlay ${spec[1]}ms steps(${frames}) infinite`;
+  }
+
+  function ambientBurst(row) {
+    clearTimeout(idleBurstTimer); clearTimeout(idleBurstEnd);
+    const cycle = (SHEET_ROWS[row] || [6, 2000])[1];
+    idleBurstTimer = setTimeout(() => {
+      playRow(row);
+      idleBurstEnd = setTimeout(() => {
+        $("sheet").style.animation = "none";
+        ambientBurst(row);
+      }, cycle);
+    }, 6000 + Math.random() * 8000);
+  }
+
+  function applyRowAnim(row) {
+    if (AMBIENT_ROWS.has(row)) {
+      $("sheet").style.animation = "none";
+      ambientBurst(row);
+    } else {
+      clearTimeout(idleBurstTimer); clearTimeout(idleBurstEnd);
+      playRow(row);
+    }
   }
 
   function setBubble(text, seconds) {
