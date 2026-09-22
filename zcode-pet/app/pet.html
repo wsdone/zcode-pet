@@ -66,6 +66,8 @@
 
   /* 跑动（Bash 等执行类） */
   .state-running #catWhole { animation: runBob .5s ease-in-out infinite; }
+  body.skin-lulu .state-running #catWhole { animation: runBobSoft .9s ease-in-out infinite; }
+  @keyframes runBobSoft { 0%,100% { transform: translateY(0); } 50% { transform: translateY(2.5px); } }
   @keyframes runBob { 0%,100% { transform: translateX(-46px) rotate(-6deg) translateY(0); }
                       25% { transform: translateX(-46px) rotate(-6deg) translateY(-8px); }
                       50% { transform: translateX(-54px) rotate(-6deg) translateY(0); }
