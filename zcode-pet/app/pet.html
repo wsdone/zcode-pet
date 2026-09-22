@@ -117,6 +117,37 @@
   .state-jumping #star3 { animation: starTw 1.15s ease-in-out infinite .56s; }
   @keyframes starTw { 0%,100% { transform: scale(.5); opacity: .3; } 50% { transform: scale(1.15); opacity: 1; } }
 
+  /* ---------- idle 小动作库（矢量连续动画，无帧率限制） ---------- */
+  /* 伸懒腰：身体压低拉长、头前伸、尾巴快摆 */
+  .act-stretch #bodyG { animation: stretchBody 2.6s ease-in-out; transform-origin: 115px 240px; }
+  @keyframes stretchBody { 0%,100% { transform: none; }
+    30%,70% { transform: translate(-5px, 4px) scale(1.07, .93); } }
+  .act-stretch #headG { animation: stretchHead 2.6s ease-in-out; }
+  @keyframes stretchHead { 0%,100% { transform: none; }
+    30%,70% { transform: translate(-7px, 6px) rotate(-4deg); } }
+  .act-stretch #tail { animation: tailSway 1.1s ease-in-out infinite; }
+  /* 舔爪：右爪抬到嘴边、头歪向爪子反复舔 */
+  .act-groom #pawR { animation: groomPaw 3s ease-in-out; transform-origin: 131px 232px; }
+  @keyframes groomPaw { 0%,100% { transform: none; }
+    20%,80% { transform: translate(-9px, -27px) rotate(-24deg); } }
+  .act-groom #headG { animation: groomHead 1.5s ease-in-out infinite; }
+  @keyframes groomHead { 0%,100% { transform: rotate(4deg); }
+    50% { transform: rotate(10deg) translateY(7px); } }
+  .act-groom #mouth { animation: chew 0.5s ease-in-out infinite; }
+  /* 打哈欠：嘴大张、眼眯起、头微仰 */
+  .act-yawn #mouth { animation: yawnMouth 2.6s ease-in-out; transform-origin: 115px 139px; }
+  @keyframes yawnMouth { 0%,100% { transform: scaleY(1); }
+    30%,62% { transform: scaleY(3.4) scaleX(1.35); } }
+  .act-yawn .eye-lid { animation: none !important; transform: scaleY(1); }
+  .act-yawn #headG { animation: yawnHead 2.6s ease-in-out; }
+  @keyframes yawnHead { 0%,100% { transform: none; }
+    38% { transform: translateY(-3px) rotate(-4deg); } }
+  /* 甩耳朵：双耳交替快速抖 */
+  .act-earflick #earL { animation: earFlickL .3s ease-in-out 4; transform-origin: 80px 94px; }
+  .act-earflick #earR { animation: earFlickR .3s ease-in-out 4 .14s; transform-origin: 150px 94px; }
+  @keyframes earFlickL { 0%,100% { transform: rotate(0); } 50% { transform: rotate(-15deg); } }
+  @keyframes earFlickR { 0%,100% { transform: rotate(0); } 50% { transform: rotate(15deg); } }
+
   /* 睡觉 */
   .state-sleep .pupil { opacity: 0; } .state-sleep .eye-sad { opacity: 1; }
   .state-sleep #zzz { opacity: 1; }
@@ -422,8 +453,9 @@
   };
   // petdex 每行实际帧数与时长（行内未用格子留空，steps 必须按实际帧数）
   // 待机类放慢（官方速率偏闹），干活/庆祝保持活力
-  const SHEET_ROWS = { 0:[6,2000], 1:[8,1060], 2:[8,1060], 3:[4,700], 4:[5,840],
-                       5:[8,1600], 6:[6,2000], 7:[6,820],  8:[6,1700] };
+  // 数值 = [帧数, 持续播放时长ms]；待机行 burst 时也用较快速率让动作更生动
+  const SHEET_ROWS = { 0:[6,1400], 1:[8,1060], 2:[8,1060], 3:[4,700], 4:[5,840],
+                       5:[8,1600], 6:[6,1400], 7:[6,820],  8:[6,1700] };
   let sheetCfg = null;
 
   function toolFlavor(tool) {
@@ -455,6 +487,7 @@
       return;
     }
     clearTimeout(pendingTimer);
+    if (currentCls === "state-idle" && m.cls !== "state-idle") clearIdleAct();
     currentCls = m.cls; lastSwitchAt = now;
     const badgeEl = $("badge");
     if (badgeEl) badgeEl.textContent =
@@ -476,6 +509,7 @@
     } else {
       apply();
     }
+    if (m.cls === "state-idle" && !sheetCfg) scheduleIdleAct();
   }
 
   // 待机行（idle/waiting）：静帧为主，每 6-14s 随机播一轮小动作——像真猫趴着偶尔动一下
@@ -520,6 +554,22 @@
   }
   function hideBubble() { clearTimeout(bubbleTimer); bubble.classList.remove("show"); }
 
+  // 内置猫 idle 小动作轮换：5-14s 随机来一个，像真猫发呆时的小动作
+  const IDLE_ACTS = ["act-stretch", "act-groom", "act-yawn", "act-earflick"];
+  let idleActTimer = null, idleActEnd = null;
+  function clearIdleAct() {
+    clearTimeout(idleActTimer); clearTimeout(idleActEnd);
+    IDLE_ACTS.forEach(a => cat.classList.remove(a));
+  }
+  function scheduleIdleAct() {
+    clearTimeout(idleActTimer); clearTimeout(idleActEnd);
+    idleActTimer = setTimeout(() => {
+      if (sheetCfg || currentCls !== "state-idle") return scheduleIdleAct();
+      const a = IDLE_ACTS[Math.floor(Math.random() * IDLE_ACTS.length)];
+      cat.classList.add(a);
+      idleActEnd = setTimeout(() => { cat.classList.remove(a); scheduleIdleAct(); }, 2900);
+    }, 5000 + Math.random() * 9000);
+  }
   function setTier(t) { cat.classList.remove("acc-1","acc-2","acc-3"); if (t>0) cat.classList.add("acc-"+Math.min(t,3)); }
   function setHungry(h) { document.documentElement.classList.toggle("hungry", h); }
   function fx(name) { // feed/pet 等瞬时反馈走气泡即可,动画由状态类驱动
