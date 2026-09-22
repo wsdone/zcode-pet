@@ -5,7 +5,7 @@
     "en": "Desktop pet for ZCode: a refined vector orange cat floats on your desktop, mirrors agent state (thinking/working/permission/error/done), notifies when confirmation is needed, with feeding & affinity. Includes a pet marketplace to adopt 4800+ pets from petdex.dev.",
     "zh-CN": "ZCode 桌宠：精细矢量橘猫悬浮桌面，实时反映 agent 状态（思考/干活/等你确认/出错/完成），需要确认时通知你，带喂食养成；内置宠物市场，一键领养 petdex.dev 的 4800+ 只宠物。"
   },
-  "version": "0.3.1",
+  "version": "0.3.2",
   "author": {
     "name": "wsdone"
   },

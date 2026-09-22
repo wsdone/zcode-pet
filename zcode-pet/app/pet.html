@@ -430,7 +430,8 @@
     const scale = Math.min(230 / cfg.frameW, 260 / cfg.frameH) * 0.92;
     const w = cfg.frameW * scale, h = cfg.frameH * scale;
     sheet.style.width = w + "px"; sheet.style.height = h + "px";
-    sheet.style.backgroundImage = `url(file://${cfg.path})`;
+    const imgSrc = cfg.sheetData || (cfg.path ? `file://${cfg.path}` : "");
+    if (imgSrc) sheet.style.backgroundImage = `url("${imgSrc}")`;
     sheet.style.backgroundSize = `${cfg.cols * w}px ${cfg.rows * h}px`;
     cfg._dispW = w;
     sheetCfg = cfg;

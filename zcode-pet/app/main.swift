@@ -407,12 +407,24 @@ final class PetController: NSObject, NSWindowDelegate {
 
     // MARK: render pushes
 
+    private var lastSheetIdentity = ""
+
     func renderAll() {
         if let g = customGrid {
-            let payload = "{\"mode\":\"sheet\",\"path\":\"\(g.path)\",\"frameW\":\(g.frameW),\"frameH\":\(g.frameH),\"cols\":\(g.cols),\"rows\":\(g.rows),\"fps\":\(g.fps)}"
-            host.js("setCustomPet(\(payload))")
+            // file:// 子资源在 loadHTMLString 页面会被 WebKit 拦截，
+            // 改读文件转 base64 data URL 注入；仅在宠物/文件变化时重传大图。
+            let identity = "\(prefs.pet)|\(g.path)|\(g.frameW)x\(g.frameH)x\(g.cols)x\(g.rows)"
+            if identity != lastSheetIdentity,
+               let data = FileManager.default.contents(atPath: g.path) {
+                let mime = g.path.hasSuffix(".png") ? "image/png" : "image/webp"
+                let b64 = data.base64EncodedString()
+                let payload = "{\"mode\":\"sheet\",\"sheetData\":\"data:\(mime);base64,\(b64)\",\"frameW\":\(g.frameW),\"frameH\":\(g.frameH),\"cols\":\(g.cols),\"rows\":\(g.rows),\"fps\":\(g.fps)}"
+                host.js("setCustomPet(\(payload))")
+                lastSheetIdentity = identity
+            }
         } else {
             host.js("setCustomPet(null)")
+            lastSheetIdentity = ""
         }
         pushStatus(force: true)
         host.js("setTier(\(tier()))")
