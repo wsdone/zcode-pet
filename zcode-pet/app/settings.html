@@ -65,6 +65,7 @@
     background-repeat: no-repeat; background-position: 0 0;
     background-size: 800% var(--rows, 900%);
     image-rendering: -webkit-optimize-contrast;
+    filter: drop-shadow(0 2px 4px rgba(50, 30, 10, 0.28));
   }
   @keyframes idlePlay { from { background-position-x: 0; } to { background-position-x: var(--step, -576px); } }
   .nm { font-weight: 600; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -98,6 +99,7 @@
     background-repeat: no-repeat; background-position: 0 0;
     background-size: 800% var(--rows, 900%);
     animation: idlePlay 1100ms steps(6) infinite;
+    filter: drop-shadow(0 4px 8px rgba(50, 30, 10, 0.30));
   }
   .d-nm { font-size: 17px; font-weight: 700; }
   .d-meta { color: var(--sub); font-size: 12px; margin: 4px 0 2px; }

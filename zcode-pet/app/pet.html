@@ -144,7 +144,8 @@
   /* ---------- 精灵图模式（petdex / GIF） ---------- */
   #sheet { position: absolute; left: 50%; bottom: 14px; transform: translateX(-50%);
            image-rendering: auto; display: none;
-           background-repeat: no-repeat; }
+           background-repeat: no-repeat;
+           filter: drop-shadow(0 3px 5px rgba(50, 30, 10, 0.32)) drop-shadow(0 1px 2px rgba(50, 30, 10, 0.18)); }
   body.custom #cat { display: none; }
   body.custom #sheet { display: block; }
   @keyframes sheetPlay { from { background-position-x: 0px; } to { background-position-x: var(--sheetStep, -1536px); } }
