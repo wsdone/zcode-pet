@@ -2,3 +2,4 @@
 **/zcode-pet-bin
 .DS_Store
 node_modules/
+zcode-pet/app/skin-*.html

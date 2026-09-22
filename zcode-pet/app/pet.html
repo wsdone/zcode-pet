@@ -599,6 +599,21 @@
   }
 
   // Swift 侧入口
+  // ---- 皮肤系统：替换 catWhole 内骨架（id 保持一致，动画全继承） ----
+  let catWholeStock = null;
+  function setSkin(name) {
+    const w = cat.querySelector("#catWhole");
+    if (!catWholeStock) catWholeStock = w.innerHTML;
+    if (name === "lulu" && window.LULU_TEMPLATE) {
+      w.innerHTML = window.LULU_TEMPLATE;
+      document.body.classList.add("skin-lulu");
+    } else {
+      w.innerHTML = catWholeStock;
+      document.body.classList.remove("skin-lulu");
+    }
+  }
+  window.setSkin = setSkin;
+
   window.setStatus = setStatus;
   window.setBubble = setBubble;
   window.setTier = setTier;

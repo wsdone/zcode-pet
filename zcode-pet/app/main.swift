@@ -292,7 +292,11 @@ final class PetHostView: NSView, WKNavigationDelegate {
         petlog("html exists: \(FileManager.default.fileExists(atPath: htmlPath)) path=\(htmlPath)")
         petlog("webview frame=\(webView.frame) winScale")
         addSubview(webView)
-        let html = (try? String(contentsOfFile: htmlPath, encoding: .utf8)) ?? "<h1>no html</h1>"
+        var html = (try? String(contentsOfFile: htmlPath, encoding: .utf8)) ?? "<h1>no html</h1>"
+        if let skin = try? String(contentsOfFile: appDir + "/skin-lulu.html", encoding: .utf8),
+           skin.contains("LULU_TEMPLATE") {
+            html = html.replacingOccurrences(of: "</body>", with: skin + "\n</body>")
+        }
         webView.loadHTMLString(html, baseURL: URL(fileURLWithPath: appDir))
     }
 
@@ -424,6 +428,7 @@ final class PetController: NSObject, NSWindowDelegate {
             }
         } else {
             host.js("setCustomPet(null)")
+            host.js("setSkin('\(Self.vectorSkins.contains(prefs.pet) ? prefs.pet : "builtin")')")
             lastSheetIdentity = ""
         }
         pushStatus(force: true)
@@ -704,10 +709,11 @@ final class PetController: NSObject, NSWindowDelegate {
     }
     func openMarket() { MarketController.shared.open() }
 
+    static let vectorSkins: Set<String> = ["builtin", "lulu"]
     func dress(_ name: String) {
         prefs.pet = name
         saveJSON(prefs, to: prefsPath)
-        if name == "builtin" { customGrid = nil }
+        if Self.vectorSkins.contains(name) { customGrid = nil }
         else if let g = loadGrid(petsDir + "/" + name + "/grid.json") { customGrid = g }
         renderAll()
         bubble(name == "builtin" ? "换回内置橘猫～" : "换上 \(name)！", seconds: 2.5)
